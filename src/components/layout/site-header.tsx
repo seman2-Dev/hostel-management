@@ -50,7 +50,15 @@ export function SiteHeader() {
     router.push("/");
   };
 
-  const navLinks = [...NAV, ...(user ? [{ href: dashboardHref, key: "nav.dashboard" as TranslationKey }] : [])];
+  const navLinks = [
+    ...NAV,
+    ...(user
+      ? [
+          { href: dashboardHref, key: "nav.dashboard" as TranslationKey },
+          { href: "/profile", key: "nav.profile" as TranslationKey },
+        ]
+      : []),
+  ];
 
   return (
     <header className="print:hidden sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
@@ -101,6 +109,10 @@ export function SiteHeader() {
                   <span className="block font-normal">{user.email}</span>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => router.push("/profile")}>
+                  <UserIcon />
+                  {t("nav.profile")}
+                </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => router.push(dashboardHref)}>
                   {isAdminRole(user.role) ? <ShieldCheck /> : <LayoutDashboard />}
                   {isAdminRole(user.role) ? t("nav.adminPanel") : t("nav.myDashboard")}
