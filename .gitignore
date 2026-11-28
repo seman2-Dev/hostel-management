@@ -1,0 +1,12 @@
+.next
+.vercel
+docs
+node_modules/**
+next-env.d.ts
+dist
+uploads
+.test-uploads
+.env
+*.log
+coverage
+*.tsbuildinfo
