@@ -14,6 +14,7 @@ import { RatingBox } from "./rating-box";
 import { useAuth } from "@/store/auth";
 import { MEAL_TYPES, useHostel } from "@/store/hostel-store";
 import { useI18n, type TranslationKey } from "@/i18n";
+import { isAdminRole } from "@/lib/roles";
 import { ratingStats, ratingsFor } from "@/lib/hostel";
 import { todayISO } from "@/mocks/seed-utils";
 import type { MealType } from "@/types";
@@ -61,7 +62,7 @@ export function MenuView({ compact = false }: { compact?: boolean }) {
               </span>
             </div>
           )}
-          {user?.role === "ADMIN" && todays && (
+          {isAdminRole(user?.role) && todays && (
             <Button
               size="sm"
               variant={todays.published ? "outline" : "default"}
@@ -80,9 +81,9 @@ export function MenuView({ compact = false }: { compact?: boolean }) {
       {!menu ? (
         <EmptyState
           title={t("menu.noMenu")}
-          hint={user?.role === "ADMIN" && todays ? undefined : t("menu.noMenuHint")}
+          hint={isAdminRole(user?.role) && todays ? undefined : t("menu.noMenuHint")}
           action={
-            user?.role === "ADMIN" ? (
+            isAdminRole(user?.role) ? (
               <Button asChild size="sm">
                 <Link href="/admin/menus">{t("admin.menus")}</Link>
               </Button>

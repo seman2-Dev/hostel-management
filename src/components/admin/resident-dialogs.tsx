@@ -11,10 +11,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { ImageUpload } from "@/components/shared/image-upload";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FormField } from "@/components/shared/form-field";
 import { useHostel } from "@/store/hostel-store";
 import { useI18n } from "@/i18n";
+import { ROLES } from "@/lib/roles";
 import { calculateMealCost, countMeals, daysWithAnyMeal, mealHistoryFor, monthOf } from "@/lib/hostel";
 import { todayISO } from "@/mocks/seed-utils";
 import type { Resident } from "@/types";
@@ -27,7 +29,17 @@ const schema = z.object({
   email: z.string().trim().min(1, "validation.required").email("validation.email"),
   phone: z.string().trim().regex(/^(\+?88)?01[3-9]\d{8}$/, "validation.phone"),
   studentId: z.string().trim().min(3, "validation.minLength").max(20, "validation.minLength"),
+  dateOfBirth: z
+    .string()
+    .min(1, "validation.required")
+    .refine((v) => {
+      const date = new Date(v);
+      return !Number.isNaN(date.getTime()) && date.getTime() <= Date.now();
+    }, "validation.dob"),
+  photo: z.string().min(1, "validation.photoRequired"),
   department: z.string().trim().min(2, "validation.minLength").max(60, "validation.minLength"),
+  role: z.enum(ROLES),
+  approvalStatus: z.enum(["PENDING", "APPROVED", "REJECTED"]),
   active: z.boolean(),
   bedId: z.string(),
 });
@@ -45,8 +57,8 @@ function ResidentForm({ resident, onDone }: { resident: Resident | null; onDone:
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: resident
-      ? { name: resident.name, nameBn: resident.nameBn, email: resident.email, phone: resident.phone, studentId: resident.studentId, department: resident.department, active: resident.active, bedId: resident.bedId ?? NO_BED }
-      : { name: "", nameBn: "", email: "", phone: "", studentId: "", department: "", active: true, bedId: NO_BED },
+      ? { name: resident.name, nameBn: resident.nameBn, email: resident.email, phone: resident.phone, studentId: resident.studentId, dateOfBirth: resident.dateOfBirth, photo: resident.photo, department: resident.department, role: resident.role, approvalStatus: resident.approvalStatus, active: resident.active, bedId: resident.bedId ?? NO_BED }
+      : { name: "", nameBn: "", email: "", phone: "", studentId: "", dateOfBirth: "", photo: "", department: "", role: "RESIDENT", approvalStatus: "APPROVED", active: true, bedId: NO_BED },
   });
 
   const bedOptions = allBeds.filter((b) => !b.residentId || b.id === resident?.bedId);
@@ -63,7 +75,11 @@ function ResidentForm({ resident, onDone }: { resident: Resident | null; onDone:
       email: v.email,
       phone: v.phone,
       studentId: v.studentId,
+      dateOfBirth: v.dateOfBirth,
+      photo: v.photo,
       department: v.department,
+      role: v.role,
+      approvalStatus: v.approvalStatus,
       active: v.active,
       bedId: v.bedId === NO_BED ? null : v.bedId,
     });
@@ -92,9 +108,45 @@ function ResidentForm({ resident, onDone }: { resident: Resident | null; onDone:
       <FormField label={t("auth.studentId")} htmlFor="rs-sid" error={errors.studentId?.message}>
         <Input id="rs-sid" aria-invalid={!!errors.studentId} {...register("studentId")} />
       </FormField>
+      <FormField label={t("auth.dateOfBirth")} htmlFor="rs-dob" error={errors.dateOfBirth?.message}>
+        <Input id="rs-dob" type="date" max={todayISO()} aria-invalid={!!errors.dateOfBirth} {...register("dateOfBirth")} />
+      </FormField>
       <FormField label={t("auth.department")} htmlFor="rs-dept" error={errors.department?.message}>
         <Input id="rs-dept" aria-invalid={!!errors.department} {...register("department")} />
       </FormField>
+      <Controller
+        control={control}
+        name="photo"
+        render={({ field }) => (
+          <FormField label={t("auth.photo")} htmlFor="rs-photo" error={errors.photo?.message} className="sm:col-span-2">
+            <ImageUpload
+              id="rs-photo"
+              value={field.value || null}
+              onChange={(url) => field.onChange(url ?? "")}
+              uploadLabel={t("auth.uploadPhoto")}
+              removeLabel={t("auth.removePhoto")}
+            />
+          </FormField>
+        )}
+      />
+      <Controller
+        control={control}
+        name="role"
+        render={({ field }) => (
+          <FormField label={t("admin.role")} htmlFor="rs-role">
+            <Select value={field.value} onValueChange={(v) => field.onChange(v as "ADMIN" | "MANAGER" | "RESIDENT")}>
+              <SelectTrigger id="rs-role">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="RESIDENT">{t("admin.roleResident")}</SelectItem>
+                <SelectItem value="MANAGER">{t("admin.roleManager")}</SelectItem>
+                <SelectItem value="ADMIN">{t("admin.roleAdmin")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </FormField>
+        )}
+      />
       <Controller
         control={control}
         name="bedId"

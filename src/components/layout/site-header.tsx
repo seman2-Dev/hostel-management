@@ -15,6 +15,7 @@ import { NotificationBell } from "./notification-bell";
 import { useAuth } from "@/store/auth";
 import { useI18n, type TranslationKey } from "@/i18n";
 import { cn } from "@/lib/utils";
+import { isAdminRole } from "@/lib/roles";
 
 const NAV: Array<{ href: string; key: TranslationKey }> = [
   { href: "/", key: "nav.home" },
@@ -22,6 +23,7 @@ const NAV: Array<{ href: string; key: TranslationKey }> = [
   { href: "/menu", key: "nav.menu" },
   { href: "/market", key: "nav.market" },
   { href: "/announcements", key: "nav.announcements" },
+  { href: "/verify", key: "nav.verify" },
 ];
 
 export function SiteHeader() {
@@ -39,7 +41,7 @@ export function SiteHeader() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  const dashboardHref = user?.role === "ADMIN" ? "/admin" : "/dashboard";
+  const dashboardHref = isAdminRole(user?.role) ? "/admin" : "/dashboard";
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   const handleLogout = () => {
@@ -51,13 +53,16 @@ export function SiteHeader() {
   const navLinks = [...NAV, ...(user ? [{ href: dashboardHref, key: "nav.dashboard" as TranslationKey }] : [])];
 
   return (
-    <header className="print:hidden sticky top-0 z-40 border-b bg-background/80 backdrop-blur-lg">
+    <header className="print:hidden sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
+      <div className="h-0.5 w-full bg-gradient-to-r from-primary via-violet-500 to-brass" aria-hidden="true" />
       <div className="container flex h-16 items-center justify-between gap-3">
         <Link href="/" className="flex min-w-0 items-center gap-2.5 rounded-lg focus-ring" aria-label={t("brand.name")}>
-          <LogoMark />
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-violet-600 shadow-glow">
+            <LogoMark className="size-7" />
+          </span>
           <span className="flex min-w-0 flex-col leading-tight">
-            <span className="truncate text-sm font-bold sm:text-base">{t("brand.name")}</span>
-            <span className="hidden text-[11px] text-muted-foreground sm:block">{t("brand.established")}</span>
+            <span className="truncate text-sm font-semibold tracking-tight sm:text-[15px]">{t("brand.name")}</span>
+            <span className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-brass sm:block">{t("brand.established")}</span>
           </span>
         </Link>
 
@@ -68,8 +73,10 @@ export function SiteHeader() {
               href={item.href}
               aria-current={isActive(item.href) ? "page" : undefined}
               className={cn(
-                "rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-ring",
-                isActive(item.href) ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                "rounded-lg px-3 py-2 text-sm font-medium transition-all focus-ring",
+                isActive(item.href)
+                  ? "bg-primary/10 text-primary shadow-[inset_0_-2px_0_hsl(var(--primary))]"
+                  : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
               )}
             >
               {t(item.key)}
@@ -77,7 +84,7 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 border-l border-border/70 pl-2.5">
           <LanguageToggle />
           <ThemeToggle />
           {user && <NotificationBell />}
@@ -95,8 +102,8 @@ export function SiteHeader() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => router.push(dashboardHref)}>
-                  {user.role === "ADMIN" ? <ShieldCheck /> : <LayoutDashboard />}
-                  {user.role === "ADMIN" ? t("nav.adminPanel") : t("nav.myDashboard")}
+                  {isAdminRole(user.role) ? <ShieldCheck /> : <LayoutDashboard />}
+                  {isAdminRole(user.role) ? t("nav.adminPanel") : t("nav.myDashboard")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={handleLogout}>
                   <LogOut />
@@ -105,7 +112,7 @@ export function SiteHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button asChild size="sm" className="hidden sm:inline-flex">
+            <Button asChild size="sm" className="hidden sm:inline-flex shine">
               <Link href="/login">
                 <LogIn />
                 {t("nav.login")}
@@ -135,7 +142,10 @@ export function SiteHeader() {
                   key={item.href}
                   href={item.href}
                   aria-current={isActive(item.href) ? "page" : undefined}
-                  className={cn("rounded-lg px-3 py-3 text-base font-medium focus-ring", isActive(item.href) ? "bg-accent text-accent-foreground" : "hover:bg-muted")}
+                  className={cn(
+                    "rounded-lg px-3 py-3 text-base font-medium focus-ring",
+                    isActive(item.href) ? "bg-primary/10 text-primary shadow-[inset_2px_0_0_hsl(var(--brass))]" : "hover:bg-muted",
+                  )}
                 >
                   {t(item.key)}
                 </Link>

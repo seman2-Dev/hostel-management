@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CalendarDays, Coins, Eye, Pencil, Plus, Receipt, Search, ShoppingBasket, Trash2, TrendingUp } from "lucide-react";
+import { CalendarDays, Coins, Eye, Pencil, Plus, Receipt, Search, Send, ShoppingBasket, Trash2, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,10 @@ import { StatCard } from "@/components/shared/stat-card";
 import { BarSeriesChart } from "@/components/charts/charts";
 import { DefaultItemsManager } from "./default-items-manager";
 import { MARKET_CATEGORIES, PurchaseDialog } from "./purchase-dialog";
+import { MarketManagerCard } from "./market-manager-card";
+import { PurchaseRequestDialog } from "./purchase-request-dialog";
+import { PurchaseRequestsPanel } from "./purchase-requests-panel";
+import { useAuth } from "@/store/auth";
 import { useHostel } from "@/store/hostel-store";
 import { useI18n } from "@/i18n";
 import { totalCost } from "@/lib/hostel";
@@ -27,9 +31,13 @@ type CategoryFilter = MarketCategory | "ALL";
 
 /** Daily market module. `admin` unlocks add / edit / delete and the default item list. */
 export function MarketView({ admin = false }: { admin?: boolean }) {
-  const { purchases, deletePurchase } = useHostel();
+  const { purchases, deletePurchase, currentMarketManager } = useHostel();
+  const { user } = useAuth();
   const { t, pick, fmt } = useI18n();
   const loading = useSimulatedLoad(350);
+  const isManager = user?.role === "MANAGER" || (!!user?.residentId && user.residentId === currentMarketManager?.id);
+  const canManage = admin || isManager;
+  const canRequest = !!user && user.role === "RESIDENT" && !canManage;
 
   const [tab, setTab] = React.useState("list");
   const [date, setDate] = React.useState(todayISO());
@@ -39,6 +47,7 @@ export function MarketView({ admin = false }: { admin?: boolean }) {
   const [to, setTo] = React.useState(todayISO());
 
   const [formOpen, setFormOpen] = React.useState(false);
+  const [requestOpen, setRequestOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<MarketPurchase | null>(null);
   const [deleting, setDeleting] = React.useState<MarketPurchase | null>(null);
   const [receipt, setReceipt] = React.useState<string | null>(null);
@@ -105,19 +114,30 @@ export function MarketView({ admin = false }: { admin?: boolean }) {
         <StatCard label={t("market.summary")} value={fmt.currency(totalCost(purchases.filter((p) => p.date.slice(0, 7) === today.slice(0, 7))))} icon={<CalendarDays />} tone="neutral" hint={t("reports.thisMonth")} />
       </div>
 
+      <MarketManagerCard admin={admin} />
+
       <Tabs value={tab} onValueChange={setTab}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <TabsList>
             <TabsTrigger value="list">{t("market.shoppingList")}</TabsTrigger>
             <TabsTrigger value="history">{t("market.history")}</TabsTrigger>
+            {canManage && <TabsTrigger value="requests">{t("market.requests")}</TabsTrigger>}
             {admin && <TabsTrigger value="defaults">{t("market.defaultItems")}</TabsTrigger>}
           </TabsList>
-          {admin && (
-            <Button onClick={openAdd}>
-              <Plus />
-              {t("market.addPurchase")}
-            </Button>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {canRequest && (
+              <Button variant="outline" onClick={() => setRequestOpen(true)}>
+                <Send />
+                {t("market.submitRequest")}
+              </Button>
+            )}
+            {canManage && (
+              <Button onClick={openAdd}>
+                <Plus />
+                {t("market.addPurchase")}
+              </Button>
+            )}
+          </div>
         </div>
 
         <TabsContent value="list" className="space-y-4">
@@ -131,7 +151,7 @@ export function MarketView({ admin = false }: { admin?: boolean }) {
           </div>
 
           {dayList.length === 0 ? (
-            <EmptyState title={t("market.noPurchases")} icon={<ShoppingBasket className="size-6" />} action={admin ? <Button size="sm" onClick={openAdd}><Plus />{t("market.addPurchase")}</Button> : undefined} />
+            <EmptyState title={t("market.noPurchases")} icon={<ShoppingBasket className="size-6" />} action={canManage ? <Button size="sm" onClick={openAdd}><Plus />{t("market.addPurchase")}</Button> : canRequest ? <Button size="sm" variant="outline" onClick={() => setRequestOpen(true)}><Send />{t("market.submitRequest")}</Button> : undefined} />
           ) : (
             <Table>
               <TableHeader>
@@ -142,7 +162,7 @@ export function MarketView({ admin = false }: { admin?: boolean }) {
                   <TableHead className="text-end">{t("market.unitPrice")}</TableHead>
                   <TableHead className="text-end">{t("market.totalPrice")}</TableHead>
                   <TableHead className="text-end">{t("market.receipt")}</TableHead>
-                  {admin && <TableHead className="text-end">{t("common.actions")}</TableHead>}
+                  {canManage && <TableHead className="text-end">{t("common.actions")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -167,7 +187,7 @@ export function MarketView({ admin = false }: { admin?: boolean }) {
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    {admin && (
+                    {canManage && (
                       <TableCell>
                         <div className="flex justify-end gap-1">
                           <Button
@@ -196,7 +216,7 @@ export function MarketView({ admin = false }: { admin?: boolean }) {
                     {t("common.total")} · {fmt.number(dayList.length)} {t("common.items")}
                   </TableCell>
                   <TableCell className="text-end text-base font-bold">{fmt.currency(totalCost(dayList))}</TableCell>
-                  <TableCell colSpan={admin ? 2 : 1} />
+                  <TableCell colSpan={canManage ? 2 : 1} />
                 </TableRow>
               </TableFooter>
             </Table>
@@ -273,6 +293,12 @@ export function MarketView({ admin = false }: { admin?: boolean }) {
           )}
         </TabsContent>
 
+        {canManage && (
+          <TabsContent value="requests">
+            <PurchaseRequestsPanel />
+          </TabsContent>
+        )}
+
         {admin && (
           <TabsContent value="defaults">
             <DefaultItemsManager />
@@ -280,7 +306,8 @@ export function MarketView({ admin = false }: { admin?: boolean }) {
         )}
       </Tabs>
 
-      {admin && <PurchaseDialog open={formOpen} onOpenChange={setFormOpen} purchase={editing} />}
+      {canManage && <PurchaseDialog open={formOpen} onOpenChange={setFormOpen} purchase={editing} />}
+      {canRequest && <PurchaseRequestDialog open={requestOpen} onOpenChange={setRequestOpen} />}
 
       <ConfirmDialog
         open={!!deleting}

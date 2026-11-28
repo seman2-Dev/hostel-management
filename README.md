@@ -9,6 +9,16 @@ The 3D building is modelled on the reference photo in `docs/hostel-reference.jpe
 walls, white balcony bands, red vertical pilasters, green window frames and the dark arch gate with red
 discs and green posts.
 
+## Phase 01 — Foundation status
+
+- **Bilingual** UI (Bengali default, English toggle, persisted in `localStorage`).
+- **RBAC shell**: `OWNER` and `ADMIN` reach `/admin`; `RESIDENT` and `MANAGER` reach `/dashboard`.
+  Roles are enforced on the server too — the UI guard is only for navigation.
+- **Admin shell**: responsive sidebar with global module search, breadcrumbs, notification bell and profile menu.
+- **API foundation**: `src/config/index.ts` reads `NEXT_PUBLIC_API_BASE_URL` / `NEXT_PUBLIC_USE_MOCK_API`;
+  `src/lib/api.ts` is the typed credentialed fetch client (CSRF-aware). Phase 01 still uses the mock store.
+- Better Auth / TanStack Query / Axios migration needs explicit approval — see the root README.
+
 ## Requirements
 
 - Node.js 18.18 or newer (developed on Node 22)
@@ -28,9 +38,18 @@ npm run build
 npm start            # http://localhost:3000
 ```
 
-Other checks: `npm run lint`, `npm run typecheck`.
+Other checks: `npm run lint`, `npm run typecheck`. With Next.js 16, `next lint` was removed, so `lint` uses the ESLint CLI directly.
 
-No environment variables are required in Phase 1. `.env.example` only lists placeholders for Phase 2.
+### Visual identity
+
+The UI uses one consistent **midnight-indigo SaaS identity**: slate surfaces, white cards, indigo→violet
+gradient actions, gold accent rules, aurora/dot-grid backdrops, glowing sidebar and soft elevated panels.
+Tokens live in `src/app/globals.css` and `tailwind.config.ts`; shared primitives (`Card`, `Button`,
+`StatCard`, `PageHeader`) carry the look across every route, so new pages stay consistent without extra styling.
+Motion is CSS-only and respects `prefers-reduced-motion`.
+
+Phase 01 uses environment config for the future API connection (`NEXT_PUBLIC_API_BASE_URL`,
+`NEXT_PUBLIC_USE_MOCK_API`) — see `.env.example`. No secrets belong in the frontend.
 
 ## Demo accounts
 
@@ -39,8 +58,8 @@ No environment variables are required in Phase 1. `.env.example` only lists plac
 | Admin    | `admin@demo.hostel`  | `Demo@12345` |
 | Resident | `resident@demo.hostel` | `Demo@12345` |
 
-The login page also has one-click "Log in as Admin / Resident" buttons. Registering a new account creates a
-resident for the current browser session only.
+Sign in with the credentials above on the login form — there is no role picker on the login or registration
+page. Public registration always creates a resident (student) account; an admin can change roles later.
 
 ## What is included
 
@@ -53,11 +72,26 @@ resident for the current browser session only.
   Hover shows a tooltip, click opens a details panel, and there are zoom/reset buttons plus a legend.
   A loading animation is shown, and a **2D floor-plan fallback** is used when WebGL is missing, the device looks
   low-end, or the user switches to it.
+- **Live meal schedule** with breakfast / lunch / dinner serving times, a "serving now / next meal" status and
+  countdown. Times are editable by an admin under Settings → Meal rules.
+- **Student-hostel verification**: a sealed "Verified student hostel" panel plus `/verify`, where anyone can look up
+  a resident by student ID, name or room number and see their room, department and active status.
 - **Today's menu** with breakfast / lunch / dinner / specials, 1–5 star ratings with optional feedback, averages,
   rating counts and duplicate-rating prevention.
 - **Scrolling announcements** with 4 styles, pause on hover and a pause button.
 - **Daily market**: default item list, custom items, automatic `quantity × unit price`, receipt upload (preview),
   date and category filters, history and daily summary.
+- **Monthly market manager**: an admin assigns one resident per month. The manager records purchases; residents send
+  "what I bought" requests which the manager approves into the shared list (or rejects). Everyone can view the list.
+- **Resident identity**: date of birth and a photo are mandatory. Registration is rejected when either is missing;
+  both are shown in the admin resident table and on the public verification page.
+- **Registration → approval → login**: residents register with student ID, date of birth and photo. The account is
+  created as **pending** and cannot log in until an admin approves it from `Admin → Residents` (approve/reject).
+- **Member management**: the admin dashboard shows total members and role breakdown. Admins can add/delete members
+  and assign one of three roles — Admin, Manager or Student member. Managers may record purchases; ordinary members
+  can only send requests, never add entries directly. A "last month at a glance" card shows market spend and meals served.
+- **Admin command center**: the dashboard links directly to every module (residents, rooms, beds, meals, menus,
+  market, announcements, settings) so the admin can run the whole hostel from one place.
 - **Meal management**: per-bed ON/OFF, bulk change for a room / floor / whole hostel behind a confirmation dialog,
   cancellation and activation deadlines, configurable daily reset rule, meal history.
 - **Admin dashboard** (12 modules plus statistics and activity log): hostel, floors, rooms, beds, residents, meals,

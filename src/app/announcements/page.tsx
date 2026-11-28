@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { useAuth } from "@/store/auth";
 import { useHostel } from "@/store/hostel-store";
 import { useI18n } from "@/i18n";
+import { isAdminRole } from "@/lib/roles";
 import { visibleAnnouncements } from "@/lib/hostel";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +28,7 @@ export default function AnnouncementsPage() {
         title={t("announcements.title")}
         subtitle={t("announcements.subtitle")}
         actions={
-          user?.role === "ADMIN" ? (
+          isAdminRole(user?.role) ? (
             <Button asChild variant="outline">
               <Link href="/admin/announcements">
                 <ShieldCheck />

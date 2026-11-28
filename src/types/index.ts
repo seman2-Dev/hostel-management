@@ -4,7 +4,9 @@
  */
 
 export type Locale = "bn" | "en";
-export type Role = "ADMIN" | "RESIDENT";
+export type Role = "OWNER" | "ADMIN" | "MANAGER" | "ACCOUNTANT" | "STAFF" | "COOK" | "RESIDENT" | "GUARDIAN";
+/** Role assignable by an admin/owner to a hostel member. */
+export type MemberRole = Role;
 export type MealType = "BREAKFAST" | "LUNCH" | "DINNER";
 export type BedStatus = "ON" | "OFF" | "UNASSIGNED";
 export type FloorNumber = 1 | 2 | 3;
@@ -25,7 +27,15 @@ export interface Resident {
   email: string;
   phone: string;
   studentId: string;
+  /** ISO date (YYYY-MM-DD). Required — registration is rejected without it. */
+  dateOfBirth: string;
+  /** Data URL of the resident's photo. Required — registration is rejected without it. */
+  photo: string;
   department: string;
+  /** Admin-assigned role: admin, market manager or student member. */
+  role: MemberRole;
+  /** Self-registered accounts stay pending until an admin approves them. */
+  approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
   active: boolean;
   bedId: string | null;
   joinedAt: string;
@@ -144,6 +154,20 @@ export interface MarketPurchase {
   receiptImage: string | null;
 }
 
+export interface PurchaseRequest {
+  id: string;
+  residentId: string;
+  residentName: string;
+  date: string;
+  itemName: string;
+  quantity: number;
+  unit: MarketUnit;
+  unitPrice: number;
+  note: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  createdAt: string;
+}
+
 export type NotificationType = "ANNOUNCEMENT" | "MENU" | "MEAL_STATUS" | "PAYMENT" | "ADMIN";
 
 export interface AppNotification {
@@ -185,6 +209,8 @@ export interface HostelSettings {
   cancelDeadline: string;
   /** "HH:mm" — residents may turn meals ON before this time. */
   activateDeadline: string;
+  /** "HH:mm" — daily serving time for each meal. */
+  mealTimes: Record<MealType, string>;
   autoResetDaily: boolean;
   defaultMealState: boolean;
   currency: "BDT";

@@ -13,6 +13,8 @@ interface RegisterInput {
   email: string;
   phone: string;
   studentId: string;
+  dateOfBirth: string;
+  photo: string;
   department: string;
   password: string;
 }
@@ -20,9 +22,8 @@ interface RegisterInput {
 interface AuthContextValue {
   user: User | null;
   ready: boolean;
-  login: (email: string, password: string) => { ok: boolean; role?: Role };
-  loginAs: (role: Role) => void;
-  register: (input: RegisterInput) => { ok: boolean; error?: "emailTaken" };
+  login: (email: string, password: string) => { ok: boolean; role?: Role; error?: "pendingApproval" };
+  register: (input: RegisterInput) => { ok: boolean; error?: "emailTaken"; pending?: boolean };
   logout: () => void;
 }
 
@@ -89,23 +90,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         if (e === DEMO_RESIDENT_EMAIL && password === DEMO_PASSWORD) {
           const res = residents.find((r) => r.id === "res-001");
-          persist({ ...DEMO_RESIDENT, name: res?.name ?? DEMO_RESIDENT.name });
-          return { ok: true, role: "RESIDENT" };
+          const role = res?.role ?? "RESIDENT";
+          persist({ ...DEMO_RESIDENT, name: res?.name ?? DEMO_RESIDENT.name, role });
+          return { ok: true, role };
         }
         const match = residents.find((r) => r.email.toLowerCase() === e);
         const registeredPassword = credentials.current.get(e);
-        if (match && match.active && (password === DEMO_PASSWORD || (registeredPassword !== undefined && password === registeredPassword))) {
-          persist({ id: `user-${match.id}`, name: match.name, email: match.email, role: "RESIDENT", active: true, residentId: match.id });
-          return { ok: true, role: "RESIDENT" };
+        const passwordOk = password === DEMO_PASSWORD || (registeredPassword !== undefined && password === registeredPassword);
+        if (match && passwordOk && match.approvalStatus === "PENDING") return { ok: false, error: "pendingApproval" };
+        if (match && passwordOk && match.approvalStatus === "REJECTED") return { ok: false };
+        if (match && match.active && passwordOk) {
+          const role = match.role;
+          persist({ id: `user-${match.id}`, name: match.name, email: match.email, role, active: true, residentId: match.id });
+          return { ok: true, role };
         }
         return { ok: false };
-      },
-      loginAs: (role) => {
-        if (role === "ADMIN") persist(DEMO_ADMIN);
-        else {
-          const res = residents.find((r) => r.id === "res-001");
-          persist({ ...DEMO_RESIDENT, name: res?.name ?? DEMO_RESIDENT.name });
-        }
       },
       register: (input) => {
         const email = input.email.trim().toLowerCase();
@@ -120,14 +119,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email,
           phone: input.phone,
           studentId: input.studentId,
+          dateOfBirth: input.dateOfBirth,
+          photo: input.photo,
           department: input.department,
-          active: true,
+          role: "RESIDENT",
+          approvalStatus: "PENDING",
+          active: false,
           bedId: null,
         });
         if (!result.ok) return { ok: false };
         credentials.current.set(email, input.password);
-        persist({ id: `user-${id}`, name: input.name, email, role: "RESIDENT", active: true, residentId: id });
-        return { ok: true };
+        // No session yet — an admin must approve the registration first.
+        return { ok: true, pending: true };
       },
       logout: () => persist(null),
     }),

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { BedDouble, Building2, CalendarDays, Coins, DoorOpen, Layers, UserCheck, Utensils, UtensilsCrossed, Wallet } from "lucide-react";
+import { BedDouble, Building2, CalendarDays, Coins, DoorOpen, Layers, UserCheck, Users, Utensils, UtensilsCrossed, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,6 +10,7 @@ import { LoadingState, useSimulatedLoad } from "@/components/ui/states";
 import { BarSeriesChart, LineSeriesChart } from "@/components/charts/charts";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
+import { LastMonthSummary } from "@/components/admin/last-month-summary";
 import { useHostel } from "@/store/hostel-store";
 import { useI18n } from "@/i18n";
 import { useActivityText } from "@/components/admin/use-activity-text";
@@ -44,12 +45,47 @@ export default function AdminOverviewPage() {
         <StatCard label={t("admin.stats.beds")} value={fmt.number(allBeds.length)} icon={<BedDouble />} tone="neutral" />
         <StatCard label={t("admin.stats.occupied")} value={fmt.number(occupied.length)} icon={<Building2 />} tone="primary" />
         <StatCard label={t("admin.stats.available")} value={fmt.number(allBeds.length - occupied.length)} icon={<BedDouble />} tone="warning" />
+        <StatCard label={t("admin.stats.members")} value={fmt.number(residents.length)} icon={<Users />} tone="primary" />
         <StatCard label={t("admin.stats.activeResidents")} value={fmt.number(residents.filter((r) => r.active).length)} icon={<UserCheck />} tone="primary" />
         <StatCard label={t("admin.stats.mealsActive")} value={fmt.number(mealsOn)} icon={<Utensils />} tone="success" />
         <StatCard label={t("admin.stats.mealsInactive")} value={fmt.number(occupied.length - mealsOn)} icon={<UtensilsCrossed />} tone="danger" />
         <StatCard label={t("admin.stats.marketToday")} value={fmt.currency(Math.round(totalCost(purchases.filter((p) => p.date === today))))} icon={<Coins />} tone="warning" />
         <StatCard label={t("admin.stats.marketMonth")} value={fmt.currency(Math.round(totalCost(purchases.filter((p) => p.date.startsWith(month)))))} icon={<Wallet />} tone="neutral" />
       </div>
+
+      <div className="mt-6">
+        <LastMonthSummary />
+      </div>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="size-4 text-brass" />
+            {t("admin.quickActions")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { href: "/admin/residents", label: t("admin.residents"), icon: <Users /> },
+              { href: "/admin/rooms", label: t("admin.rooms"), icon: <DoorOpen /> },
+              { href: "/admin/beds", label: t("admin.beds"), icon: <BedDouble /> },
+              { href: "/admin/meals", label: t("admin.meals"), icon: <Utensils /> },
+              { href: "/admin/menus", label: t("admin.menus"), icon: <CalendarDays /> },
+              { href: "/admin/market", label: t("admin.market"), icon: <Coins /> },
+              { href: "/admin/announcements", label: t("admin.announcements"), icon: <CalendarDays /> },
+              { href: "/admin/settings", label: t("admin.settings"), icon: <Layers /> },
+            ].map((action) => (
+              <Button key={action.href} asChild variant="outline" className="justify-start shadow-none">
+                <Link href={action.href}>
+                  {action.icon}
+                  {action.label}
+                </Link>
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="mt-6 grid gap-4 xl:grid-cols-2">
         <Card>

@@ -20,6 +20,8 @@ import type {
   MarketItem,
   MarketPurchase,
   MealType,
+  MemberRole,
+  PurchaseRequest,
   Resident,
   Room,
 } from "@/types";
@@ -35,6 +37,7 @@ import {
   seedRatings,
 } from "@/mocks/content";
 import { uid } from "@/lib/utils";
+import { todayISO } from "@/mocks/seed-utils";
 
 export type MealScope =
   | { type: "bed"; bedId: string }
@@ -55,6 +58,9 @@ interface HostelState {
   notifications: AppNotification[];
   activity: ActivityLogEntry[];
   settings: HostelSettings;
+  /** Resident selected as market manager for each YYYY-MM month. */
+  marketManagerByMonth: Record<string, string>;
+  purchaseRequests: PurchaseRequest[];
 }
 
 interface HostelActions {
@@ -67,6 +73,8 @@ interface HostelActions {
   removeResident: (id: string) => void;
   assignResident: (residentId: string, bedId: string | null) => ActionResult;
   setResidentActive: (id: string, active: boolean) => void;
+  setResidentRole: (id: string, role: MemberRole) => void;
+  setResidentApproval: (id: string, status: "APPROVED" | "REJECTED") => void;
   /* menus */
   saveMenu: (menu: DailyMenu) => void;
   deleteMenu: (id: string) => void;
@@ -81,6 +89,11 @@ interface HostelActions {
   deletePurchase: (id: string) => void;
   saveMarketItem: (item: MarketItem) => void;
   deleteMarketItem: (id: string) => void;
+  /* market manager workflow */
+  setMarketManager: (month: string, residentId: string | null) => void;
+  submitPurchaseRequest: (input: Omit<PurchaseRequest, "id" | "status" | "createdAt">) => void;
+  approvePurchaseRequest: (id: string) => void;
+  rejectPurchaseRequest: (id: string) => void;
   /* misc */
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
@@ -92,6 +105,7 @@ interface HostelSelectors {
   getResident: (id: string | null | undefined) => Resident | undefined;
   getRoom: (roomNumber: number) => Room | undefined;
   getBed: (bedId: string) => Bed | undefined;
+  currentMarketManager: Resident | undefined;
 }
 
 type Store = HostelState & HostelActions & HostelSelectors;
@@ -111,6 +125,8 @@ function initialState(): HostelState {
     notifications: seedNotifications(),
     activity: seedActivityLog(),
     settings: DEFAULT_SETTINGS,
+    marketManagerByMonth: residents[0] ? { [todayISO().slice(0, 7)]: residents[0].id } : {},
+    purchaseRequests: [],
   };
 }
 
@@ -158,6 +174,7 @@ export function HostelStoreProvider({ children }: { children: React.ReactNode })
       getResident,
       getRoom,
       getBed,
+      currentMarketManager: getResident(state.marketManagerByMonth[todayISO().slice(0, 7)]),
 
       setBedMeal: (bedId, on, actor) => {
         const bed = getBed(bedId);
@@ -259,6 +276,27 @@ export function HostelStoreProvider({ children }: { children: React.ReactNode })
         log("accountStatus", active ? "Inactive" : "Active", active ? "Active" : "Inactive");
       },
 
+      setResidentRole: (id, role) =>
+        setState((s) => {
+          const month = todayISO().slice(0, 7);
+          const managers = { ...s.marketManagerByMonth };
+          if (role === "MANAGER") managers[month] = id;
+          else if (managers[month] === id) delete managers[month];
+          return {
+            ...s,
+            residents: s.residents.map((r) => (r.id === id ? { ...r, role } : r)),
+            marketManagerByMonth: managers,
+          };
+        }),
+
+      setResidentApproval: (id, status) =>
+        setState((s) => ({
+          ...s,
+          residents: s.residents.map((r) =>
+            r.id === id ? { ...r, approvalStatus: status, active: status === "APPROVED" } : r,
+          ),
+        })),
+
       saveMenu: (menu) => {
         setState((s) => ({
           ...s,
@@ -333,6 +371,59 @@ export function HostelStoreProvider({ children }: { children: React.ReactNode })
         setState((s) => ({ ...s, marketItems: s.marketItems.filter((i) => i.id !== id) }));
         log("defaultItemDeleted", id, "—");
       },
+
+      setMarketManager: (month, residentId) =>
+        setState((s) => {
+          const next = { ...s.marketManagerByMonth };
+          if (residentId) next[month] = residentId;
+          else delete next[month];
+          return { ...s, marketManagerByMonth: next };
+        }),
+
+      submitPurchaseRequest: (input) =>
+        setState((s) => ({
+          ...s,
+          purchaseRequests: [
+            {
+              ...input,
+              id: uid("pr"),
+              status: "PENDING",
+              createdAt: new Date().toISOString(),
+            },
+            ...s.purchaseRequests,
+          ],
+        })),
+
+      approvePurchaseRequest: (id) =>
+        setState((s) => {
+          const request = s.purchaseRequests.find((r) => r.id === id);
+          if (!request || request.status !== "PENDING") return s;
+          const purchase: MarketPurchase = {
+            id: uid("pu"),
+            itemId: null,
+            nameEn: request.itemName,
+            nameBn: request.itemName,
+            category: "OTHER",
+            quantity: request.quantity,
+            unit: request.unit,
+            unitPrice: request.unitPrice,
+            totalPrice: Math.round(request.quantity * request.unitPrice * 100) / 100,
+            date: request.date,
+            description: request.note,
+            receiptImage: null,
+          };
+          return {
+            ...s,
+            purchases: [purchase, ...s.purchases],
+            purchaseRequests: s.purchaseRequests.map((r) => (r.id === id ? { ...r, status: "APPROVED" } : r)),
+          };
+        }),
+
+      rejectPurchaseRequest: (id) =>
+        setState((s) => ({
+          ...s,
+          purchaseRequests: s.purchaseRequests.map((r) => (r.id === id ? { ...r, status: "REJECTED" } : r)),
+        })),
 
       markNotificationRead: (id) =>
         setState((s) => ({ ...s, notifications: s.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)) })),

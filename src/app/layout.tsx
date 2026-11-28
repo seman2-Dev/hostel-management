@@ -22,15 +22,17 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6faf8" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b1214" },
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0f1f" },
   ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="bn" suppressHydrationWarning>
-      <body className="min-h-screen">
+      {/* Some browser extensions (e.g. Grammarly) inject attributes into <body>
+          before React hydrates. Suppress that harmless attribute mismatch. */}
+      <body className="min-h-screen bg-brand-mesh" suppressHydrationWarning>
         <Providers>
           <SkipLink />
           <SiteHeader />

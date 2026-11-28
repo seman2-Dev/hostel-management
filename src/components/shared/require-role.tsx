@@ -10,7 +10,7 @@ import { useI18n } from "@/i18n";
 import type { Role } from "@/types";
 
 /** UI-level guard for Phase 1. The real enforcement happens on the server in Phase 2. */
-export function RequireRole({ role, children }: { role: Role; children: React.ReactNode }) {
+export function RequireRole({ role, children }: { role: Role | Role[]; children: React.ReactNode }) {
   const { user, ready } = useAuth();
   const { t } = useI18n();
 
@@ -32,7 +32,8 @@ export function RequireRole({ role, children }: { role: Role; children: React.Re
     );
   }
 
-  if (user.role !== role) {
+  const allowed = Array.isArray(role) ? role : [role];
+  if (!allowed.includes(user.role)) {
     return (
       <div className="container py-16">
         <EmptyState

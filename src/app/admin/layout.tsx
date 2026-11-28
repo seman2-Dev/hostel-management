@@ -6,7 +6,7 @@ import { RequireRole } from "@/components/shared/require-role";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <RequireRole role="ADMIN">
+    <RequireRole role={["OWNER", "ADMIN"]}>
       <AdminShell>{children}</AdminShell>
     </RequireRole>
   );

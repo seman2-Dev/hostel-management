@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useHostel } from "@/store/hostel-store";
 import { useAuth } from "@/store/auth";
 import { useI18n } from "@/i18n";
+import { isAdminRole } from "@/lib/roles";
 import { bedStatus, mealHistoryFor } from "@/lib/hostel";
 import { cn } from "@/lib/utils";
 import { daysAgoISO, todayISO } from "@/mocks/seed-utils";
@@ -130,7 +131,7 @@ export function RoomPanel({
         )}
       </div>
 
-      {user?.role === "ADMIN" && (
+      {isAdminRole(user?.role) && (
         <Button asChild variant="outline" size="sm" className="mt-3 w-full">
           <Link href="/admin/meals">
             <Settings2 />

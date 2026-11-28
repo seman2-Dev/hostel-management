@@ -20,6 +20,7 @@ export const DEFAULT_SETTINGS: HostelSettings = {
   fixedMonthlyCharge: 300,
   cancelDeadline: "23:00",
   activateDeadline: "23:00",
+  mealTimes: { BREAKFAST: "07:30", LUNCH: "13:00", DINNER: "20:00" },
   autoResetDaily: true,
   defaultMealState: true,
   currency: "BDT",

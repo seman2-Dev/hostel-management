@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { History, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Check, Crown, History, Pencil, Plus, Search, ShieldCheck, Trash2, UserCheck, Users, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/ui/states";
 import { ResidentFormDialog, ResidentHistoryDialog } from "@/components/admin/resident-dialogs";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
+import { StatCard } from "@/components/shared/stat-card";
 import { Pager, usePagination } from "@/components/shared/pager";
 import { useHostel } from "@/store/hostel-store";
 import { useI18n } from "@/i18n";
@@ -20,9 +21,9 @@ import type { Resident } from "@/types";
 
 export default function AdminResidentsPage() {
   const { t, pick, fmt } = useI18n();
-  const { residents, removeResident, setResidentActive } = useHostel();
+  const { residents, removeResident, setResidentActive, setResidentRole, setResidentApproval } = useHostel();
   const [query, setQuery] = React.useState("");
-  const [status, setStatus] = React.useState<"all" | "active" | "inactive" | "nobed">("all");
+  const [status, setStatus] = React.useState<"all" | "active" | "inactive" | "nobed" | "pending">("all");
   const [editing, setEditing] = React.useState<Resident | null>(null);
   const [formOpen, setFormOpen] = React.useState(false);
   const [removing, setRemoving] = React.useState<Resident | null>(null);
@@ -31,7 +32,7 @@ export default function AdminResidentsPage() {
   const rows = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     return residents
-      .filter((r) => status === "all" || (status === "active" && r.active) || (status === "inactive" && !r.active) || (status === "nobed" && !r.bedId))
+      .filter((r) => status === "all" || (status === "active" && r.active) || (status === "inactive" && !r.active) || (status === "nobed" && !r.bedId) || (status === "pending" && r.approvalStatus === "PENDING"))
       .filter((r) => !q || r.name.toLowerCase().includes(q) || r.nameBn.includes(query.trim()) || r.studentId.includes(q) || r.email.toLowerCase().includes(q) || r.department.toLowerCase().includes(q) || (r.bedId ?? "").toLowerCase().includes(q));
   }, [residents, query, status]);
   const { page, pages, slice, setPage } = usePagination(rows, 12);
@@ -55,6 +56,14 @@ export default function AdminResidentsPage() {
         }
       />
 
+      <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <StatCard label={t("admin.stats.members")} value={fmt.number(residents.length)} icon={<Users />} tone="primary" />
+        <StatCard label={t("admin.pendingApprovals")} value={fmt.number(residents.filter((r) => r.approvalStatus === "PENDING").length)} icon={<UserCheck />} tone="warning" />
+        <StatCard label={t("admin.roleAdmin")} value={fmt.number(residents.filter((r) => r.role === "ADMIN").length)} icon={<ShieldCheck />} tone="danger" />
+        <StatCard label={t("admin.roleManager")} value={fmt.number(residents.filter((r) => r.role === "MANAGER").length)} icon={<Crown />} tone="warning" />
+        <StatCard label={t("admin.roleResident")} value={fmt.number(residents.filter((r) => r.role === "RESIDENT").length)} icon={<UserCheck />} tone="success" />
+      </div>
+
       <div className="mb-3 flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -69,6 +78,7 @@ export default function AdminResidentsPage() {
             <SelectItem value="active">{t("common.active")}</SelectItem>
             <SelectItem value="inactive">{t("common.inactive")}</SelectItem>
             <SelectItem value="nobed">{t("admin.noBed")}</SelectItem>
+            <SelectItem value="pending">{t("admin.pendingApprovals")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -81,6 +91,8 @@ export default function AdminResidentsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t("common.resident")}</TableHead>
+                <TableHead>{t("admin.role")}</TableHead>
+                <TableHead>{t("admin.approval")}</TableHead>
                 <TableHead>{t("auth.department")}</TableHead>
                 <TableHead>{t("common.phone")}</TableHead>
                 <TableHead>{t("common.bed")}</TableHead>
@@ -92,10 +104,46 @@ export default function AdminResidentsPage() {
               {slice.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="min-w-[12rem]">
-                    <p className="font-medium">{pick(r, "name")}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {r.studentId} · {r.email}
-                    </p>
+                    <div className="flex items-center gap-2.5">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={r.photo} alt="" className="size-9 shrink-0 rounded-full border object-cover" />
+                      <div className="min-w-0">
+                        <p className="font-medium">{pick(r, "name")}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {r.studentId} · {t("auth.dateOfBirth")}: {fmt.date(r.dateOfBirth)}
+                        </p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Select value={r.role} onValueChange={(v) => setResidentRole(r.id, v as "ADMIN" | "MANAGER" | "RESIDENT")}>
+                      <SelectTrigger aria-label={`${t("admin.role")}: ${r.name}`} className="h-8 w-32 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="RESIDENT">{t("admin.roleResident")}</SelectItem>
+                        <SelectItem value="MANAGER">{t("admin.roleManager")}</SelectItem>
+                        <SelectItem value="ADMIN">{t("admin.roleAdmin")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    {r.approvalStatus === "PENDING" ? (
+                      <div className="flex flex-wrap gap-1">
+                        <Button size="sm" onClick={() => { setResidentApproval(r.id, "APPROVED"); toast.success(t("admin.approved")); }}>
+                          <Check />
+                          {t("admin.approve")}
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => { setResidentApproval(r.id, "REJECTED"); toast.success(t("admin.rejected")); }}>
+                          <X />
+                          {t("admin.reject")}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Badge variant={r.approvalStatus === "APPROVED" ? "success" : "danger"}>
+                        {r.approvalStatus === "APPROVED" ? t("admin.approved") : t("admin.rejected")}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>{r.department}</TableCell>
                   <TableCell className="whitespace-nowrap" dir="ltr">

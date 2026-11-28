@@ -17,6 +17,11 @@ const LAST_NAMES: Array<[string, string]> = [
 
 const DEPARTMENTS = ["CSE", "EEE", "English", "Bangla", "Economics", "Physics", "Chemistry", "Accounting", "Law", "Sociology"];
 
+function avatar(initial: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" rx="48" fill="#e7f0ea"/><text x="48" y="62" font-family="sans-serif" font-size="40" font-weight="700" text-anchor="middle" fill="#0f5138">${initial}</text></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
 export const TOTAL_BEDS = ALL_ROOM_NUMBERS.length * BED_LABELS.length; // 120
 
 /** Number of occupied beds in the demo dataset (remaining beds are vacant). */
@@ -52,7 +57,11 @@ export function seedHostel(): SeededHostel {
       email: `${first[0].toLowerCase()}.${last[0].toLowerCase()}${counter + 1}@student.example.edu`,
       phone: `01${["7", "8", "9", "5", "6"][counter % 5]}${String(10000000 + Math.floor(rand() * 89999999))}`,
       studentId: `${22}${String(1000 + counter * 3)}`,
+      dateOfBirth: `${2000 + (counter % 6)}-${String(1 + (counter % 12)).padStart(2, "0")}-${String(1 + (counter % 27)).padStart(2, "0")}`,
+      photo: avatar(first[0][0]),
       department: DEPARTMENTS[counter % DEPARTMENTS.length],
+      role: "RESIDENT",
+      approvalStatus: "APPROVED",
       active: rand() > 0.04,
       bedId: bed.id,
       joinedAt: daysAgoISO(30 + Math.floor(rand() * 600)),

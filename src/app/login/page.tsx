@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Eye, EyeOff, LogIn, ShieldCheck, User } from "lucide-react";
+import { Eye, EyeOff, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import { FormField } from "@/components/shared/form-field";
 import { LogoMark } from "@/components/layout/logo";
 import { useAuth } from "@/store/auth";
 import { useI18n } from "@/i18n";
-import { DEMO_ADMIN_EMAIL, DEMO_PASSWORD, DEMO_RESIDENT_EMAIL } from "@/mocks/residents";
+import { isAdminRole } from "@/lib/roles";
 import type { Role } from "@/types";
 
 const schema = z.object({
@@ -24,14 +24,15 @@ const schema = z.object({
 });
 type FormValues = z.infer<typeof schema>;
 
-const home = (role: Role) => (role === "ADMIN" ? "/admin" : "/dashboard");
+const home = (role: Role) => (isAdminRole(role) ? "/admin" : "/dashboard");
 
 export default function LoginPage() {
   const { t } = useI18n();
   const router = useRouter();
-  const { user, login, loginAs } = useAuth();
+  const { user, login } = useAuth();
   const [show, setShow] = React.useState(false);
   const [failed, setFailed] = React.useState(false);
+  const [pending, setPending] = React.useState(false);
 
   const {
     register,
@@ -51,14 +52,9 @@ export default function LoginPage() {
       router.replace(home(result.role));
     } else {
       setFailed(true);
+      setPending(result.error === "pendingApproval");
     }
   });
-
-  const demo = (role: Role) => {
-    loginAs(role);
-    toast.success(t("auth.loggedIn"));
-    router.replace(home(role));
-  };
 
   return (
     <div className="container flex justify-center py-10 sm:py-16">
@@ -71,8 +67,8 @@ export default function LoginPage() {
         <CardContent className="space-y-5">
           <form onSubmit={onSubmit} noValidate className="space-y-4">
             {failed && (
-              <p role="alert" className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm font-medium text-danger">
-                {t("auth.invalid")}
+              <p role="alert" className={`rounded-lg border px-3 py-2 text-sm font-medium ${pending ? "border-warning/40 bg-warning/10 text-warning" : "border-danger/40 bg-danger/10 text-danger"}`}>
+                {pending ? t("auth.pendingApproval") : t("auth.invalid")}
               </p>
             )}
             <FormField label={t("auth.email")} htmlFor="email" error={errors.email?.message}>
@@ -96,35 +92,6 @@ export default function LoginPage() {
               {t("auth.loginButton")}
             </Button>
           </form>
-
-          <div className="space-y-3 rounded-xl border border-dashed p-4">
-            <p className="text-sm font-semibold">{t("auth.demoAccounts")}</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Button type="button" variant="secondary" onClick={() => demo("ADMIN")}>
-                <ShieldCheck />
-                {t("auth.demoAdmin")}
-              </Button>
-              <Button type="button" variant="secondary" onClick={() => demo("RESIDENT")}>
-                <User />
-                {t("auth.demoResident")}
-              </Button>
-            </div>
-            <dl className="space-y-0.5 text-xs text-muted-foreground" dir="ltr">
-              <div>
-                <dt className="inline font-medium">Admin: </dt>
-                <dd className="inline">{DEMO_ADMIN_EMAIL}</dd>
-              </div>
-              <div>
-                <dt className="inline font-medium">Resident: </dt>
-                <dd className="inline">{DEMO_RESIDENT_EMAIL}</dd>
-              </div>
-              <div>
-                <dt className="inline font-medium">Password: </dt>
-                <dd className="inline">{DEMO_PASSWORD}</dd>
-              </div>
-            </dl>
-            <p className="text-xs text-muted-foreground">{t("auth.demoHint")}</p>
-          </div>
 
           <p className="text-center text-sm text-muted-foreground">
             {t("auth.noAccount")}{" "}

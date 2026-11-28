@@ -4,56 +4,61 @@
 
 @layer base {
   :root {
-    --background: 150 20% 98%;
-    --foreground: 200 25% 12%;
+    /* Midnight indigo + slate + gold — premium SaaS identity. */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 200 25% 12%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 200 25% 12%;
-    --primary: 164 80% 24%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 243 75% 59%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 94%;
-    --secondary-foreground: 215 25% 22%;
-    --muted: 210 20% 95%;
-    --muted-foreground: 215 14% 40%;
-    --accent: 166 50% 92%;
-    --accent-foreground: 164 80% 18%;
-    --success: 152 65% 36%;
+    --secondary: 226 60% 96%;
+    --secondary-foreground: 226 40% 22%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 243 85% 96%;
+    --accent-foreground: 243 75% 38%;
+    --brass: 38 92% 48%;
+    --brass-foreground: 0 0% 100%;
+    --success: 160 84% 34%;
     --success-foreground: 0 0% 100%;
-    --danger: 0 72% 48%;
+    --danger: 0 72% 51%;
     --danger-foreground: 0 0% 100%;
-    --warning: 38 92% 46%;
+    --warning: 38 92% 48%;
     --warning-foreground: 30 80% 10%;
-    --border: 214 20% 88%;
-    --input: 214 20% 88%;
-    --ring: 164 80% 30%;
-    --radius: 0.75rem;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 243 75% 59%;
+    --radius: 1rem;
   }
 
   .dark {
-    --background: 200 28% 7%;
-    --foreground: 150 15% 94%;
-    --card: 200 25% 10%;
-    --card-foreground: 150 15% 94%;
-    --popover: 200 25% 10%;
-    --popover-foreground: 150 15% 94%;
-    --primary: 164 65% 42%;
-    --primary-foreground: 200 30% 6%;
-    --secondary: 200 18% 16%;
-    --secondary-foreground: 150 15% 92%;
-    --muted: 200 18% 14%;
-    --muted-foreground: 200 10% 66%;
-    --accent: 168 30% 16%;
-    --accent-foreground: 164 60% 80%;
-    --success: 152 60% 46%;
-    --success-foreground: 200 30% 6%;
-    --danger: 0 70% 58%;
+    --background: 229 42% 6%;
+    --foreground: 210 40% 96%;
+    --card: 228 34% 10%;
+    --card-foreground: 210 40% 96%;
+    --popover: 228 34% 10%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 243 82% 69%;
+    --primary-foreground: 229 42% 8%;
+    --secondary: 228 28% 16%;
+    --secondary-foreground: 210 40% 94%;
+    --muted: 228 28% 14%;
+    --muted-foreground: 215 20% 66%;
+    --accent: 243 40% 18%;
+    --accent-foreground: 243 90% 86%;
+    --brass: 45 95% 62%;
+    --brass-foreground: 229 42% 8%;
+    --success: 158 64% 46%;
+    --success-foreground: 229 42% 8%;
+    --danger: 0 72% 60%;
     --danger-foreground: 0 0% 100%;
-    --warning: 40 90% 56%;
+    --warning: 42 92% 60%;
     --warning-foreground: 30 80% 10%;
-    --border: 200 16% 20%;
-    --input: 200 16% 20%;
-    --ring: 164 65% 48%;
+    --border: 228 24% 20%;
+    --input: 228 24% 20%;
+    --ring: 243 82% 69%;
   }
 
   * {
@@ -66,32 +71,125 @@
 
   body {
     @apply bg-background font-sans text-foreground antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   html[lang="bn"] body {
     font-family: "Noto Sans Bengali", "Inter", "Hind Siliguri", system-ui, sans-serif;
     line-height: 1.7;
   }
+
+  ::selection {
+    @apply bg-primary/25 text-foreground;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/40;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full border-2 border-transparent bg-border bg-clip-content;
+  }
 }
 
 @layer components {
+  .eyebrow {
+    @apply text-[11px] font-bold uppercase tracking-[0.24em] text-brass;
+  }
+
+  .section-title {
+    @apply text-2xl font-semibold tracking-tight sm:text-3xl;
+  }
+
+  .display-title {
+    @apply text-4xl font-bold leading-[1.06] tracking-[-0.04em] sm:text-5xl lg:text-[3.5rem];
+  }
+
+  /* Gradient headline treatment — the signature look. */
+  .gradient-text {
+    @apply bg-gradient-to-br from-primary via-violet-500 to-brass bg-clip-text text-transparent;
+  }
+
+  .section-kicker {
+    @apply mb-2 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.24em] text-brass;
+  }
+
+  .section-kicker::after {
+    content: "";
+    @apply h-px w-10 bg-gradient-to-r from-brass/70 to-transparent;
+  }
+
+  .gold-rule {
+    @apply h-1 w-14 rounded-full bg-gradient-to-r from-primary via-violet-500 to-brass;
+  }
+
+  .panel {
+    @apply rounded-2xl border border-border/70 bg-card/90 shadow-panel backdrop-blur-sm;
+  }
+
+  .panel-flat {
+    @apply rounded-2xl border border-border/70 bg-card/70;
+  }
+
+  .glass-card {
+    @apply rounded-2xl border border-white/40 bg-white/70 shadow-glow backdrop-blur-xl dark:border-white/10 dark:bg-white/5;
+  }
+
+  .hairline {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-border to-transparent;
+  }
+
+  .metric-value {
+    @apply text-2xl font-bold tracking-tight sm:text-3xl;
+  }
+
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
   .glass {
     @apply border border-border/60 bg-card/70 backdrop-blur-md;
   }
-  .section-title {
-    @apply text-2xl font-bold tracking-tight sm:text-3xl;
+
+  /* Decorative orbit used behind the 3D viewer. */
+  .orb {
+    @apply pointer-events-none absolute rounded-full border border-primary/20;
+    animation: float 9s ease-in-out infinite;
   }
-  .focus-ring {
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+
+  .shine {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shine::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.28) 48%, transparent 62%);
+    transform: translateX(-120%);
+    animation: shine 6s ease-in-out infinite;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-marquee {
+  .animate-marquee,
+  .orb,
+  .shine::after {
     animation: none !important;
   }
-  * {
+
+  *,
+  *::before,
+  *::after {
     scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

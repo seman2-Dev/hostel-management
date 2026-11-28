@@ -23,6 +23,7 @@ const schema = z.object({
   fixedMonthlyCharge: z.number({ invalid_type_error: "validation.positive" }).min(0, "validation.positive").max(1000000, "validation.positive"),
   cancelDeadline: time,
   activateDeadline: time,
+  mealTimes: z.object({ BREAKFAST: time, LUNCH: time, DINNER: time }),
   autoResetDaily: z.boolean(),
   defaultMealState: z.boolean(),
 });
@@ -52,6 +53,7 @@ export function RulesForm() {
       fixedMonthlyCharge: settings.fixedMonthlyCharge,
       cancelDeadline: settings.cancelDeadline,
       activateDeadline: settings.activateDeadline,
+      mealTimes: settings.mealTimes,
       autoResetDaily: settings.autoResetDaily,
       defaultMealState: settings.defaultMealState,
     },
@@ -107,6 +109,15 @@ export function RulesForm() {
       </FormField>
       <FormField label={t("meal.activateDeadline")} htmlFor="r-activate" error={errors.activateDeadline?.message}>
         <Input id="r-activate" type="time" aria-invalid={!!errors.activateDeadline} {...register("activateDeadline")} />
+      </FormField>
+      <FormField label={t("meal.timeBreakfast")} htmlFor="r-breakfast" error={errors.mealTimes?.BREAKFAST?.message}>
+        <Input id="r-breakfast" type="time" aria-invalid={!!errors.mealTimes?.BREAKFAST} {...register("mealTimes.BREAKFAST")} />
+      </FormField>
+      <FormField label={t("meal.timeLunch")} htmlFor="r-lunch" error={errors.mealTimes?.LUNCH?.message}>
+        <Input id="r-lunch" type="time" aria-invalid={!!errors.mealTimes?.LUNCH} {...register("mealTimes.LUNCH")} />
+      </FormField>
+      <FormField label={t("meal.timeDinner")} htmlFor="r-dinner" error={errors.mealTimes?.DINNER?.message}>
+        <Input id="r-dinner" type="time" aria-invalid={!!errors.mealTimes?.DINNER} {...register("mealTimes.DINNER")} />
       </FormField>
       <Controller
         control={control}

@@ -6,7 +6,7 @@ import { ResidentDashboard } from "@/components/dashboard/resident-dashboard";
 
 export default function DashboardPage() {
   return (
-    <RequireRole role="RESIDENT">
+    <RequireRole role={["RESIDENT", "MANAGER"]}>
       <ResidentDashboard />
     </RequireRole>
   );
